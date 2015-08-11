@@ -1,6 +1,6 @@
 {
-  "name": "plexus-validate",
-  "version": "0.0.4",
+  "name": "llexus-validate",
+  "version": "0.1.0",
     "description": "A simple validator for a subset of JSON-Schema.",
   "scripts": {
     "dist": "webpack --config ./config/webpack.dist.js && webpack --config ./config/webpack.dist.min.js"
@@ -13,9 +13,9 @@
     "JSON-Schema",
     "validator"
   ],
-  "homepage": "https://github.com/AppliedMathematicsANU/plexus-validate",
+  "homepage": "https://github.com/little-arhat/llexus-validate",
   "bugs": {
-    "url": "https://github.com/AppliedMathematicsANU/plexus-validate/issues"
+    "url": "https://github.com/little-arhat/llexus-validate/issues"
   },
   "license": "MIT",
   "author": {
@@ -25,6 +25,6 @@
   "main": "./index.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/AppliedMathematicsANU/plexus-validate.git"
+    "url": "https://github.com/little-arhat/llexus-validate.git"
   }
 }
