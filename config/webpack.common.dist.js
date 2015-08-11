@@ -2,7 +2,7 @@
 
 
 module.exports = {
-    devtool: 'eval',
+    // devtool: 'eval',
     entry: './index.js',
     resolve: {
         extensions: ['', '.js'],

@@ -258,11 +258,14 @@ var resolve = function(schema, context) {
   var reference = schema['$ref'];
 
   if (reference) {
-    if (!reference.match(/^#(\/([a-zA-Z_][a-zA-Z_0-9]*|[0-9]+))*$/))
+    if (!reference.match(/^#(\/([a-zA-Z_][a-zA-Z_0-9]*|[0-9]+))*$/)) {
       throw new Error('reference '+reference+' has unsupported format');
-    return merge(without(schema, '$ref'), getIn(context, reference.split('/').slice(1));)
-  } else
+    }
+    return merge(without(schema, '$ref'),
+                 getIn(context, reference.split('/').slice(1)));
+  } else {
     return schema;
+  }
 };
 
 
