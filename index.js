@@ -1,27 +1,26 @@
 /*
-The MIT License (MIT)
+  The MIT License (MIT)
 
-Copyright (c) 2014 The Australian National University
+  Copyright (c) 2014 The Australian National University
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+  The above copyright notice and this permission notice shall be included in all
+  copies or substantial portions of the Software.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  SOFTWARE.
 */
-
 'use strict';
 
 
@@ -94,7 +93,6 @@ validator.number = function(schema, instance) {
 
 validator.integer = function(schema, instance) {
   var errors = [];
-
   if (typeof instance != 'number')
     errors.push('must be a number');
   else {
@@ -137,10 +135,13 @@ validator.array = function(schema, instance, context) {
     if (schema.minItems != null && instance.length < schema.minItems)
       errors.push('must have at least ' + schema.minItems + ' items');
     result = fieldErrors(errors);
-
     if (schema.items != null) {
+      var real_items = resolve(schema.items, context);
+      var tuple_typing = Array.isArray(real_items);
       for (i in instance) {
-        errors = validate(schema.items, instance[i], context);
+        errors = validate(tuple_typing ? real_items[i] : schema.items,
+                          instance[i],
+                          context);
         for (j in errors) {
           result.push({
             path  : [i].concat(errors[j].path),
@@ -154,6 +155,14 @@ validator.array = function(schema, instance, context) {
   return result;
 };
 
+var errorsForKey = function(key, errors) {
+  return errors.map(function(error) {
+    return {
+      path: [key].concat(error.path),
+      errors: error.errors
+    }
+  });
+}
 
 var requires = function(schema, key) {
   var subschema;
@@ -176,23 +185,29 @@ validator.object = function(schema, instance, context) {
   if (instance == null)
     instance = {};
 
-  if (instance.constructor !== Object)
+  if (instance.constructor !== Object) {
     result.push({ path: [], errors: ['must be a plain object'] });
-  else {
+  } else {
     for (key in schema.properties) {
       if (instance.hasOwnProperty(key)) {
         errors = validate(schema.properties[key], instance[key], context);
-        for (i = 0; i < errors.length; ++i)
-          result.push({
-            path  : [key].concat(errors[i].path),
-            errors: errors[i].errors
-          });
-      }
-      else if (requires(schema, key)) {
+        result = result.concat(errorsForKey(key, errors));
+      } else if (requires(schema, key)) {
         result.push({
           path  : [key],
           errors: [requires(schema, key)]
         });
+      }
+    }
+    if (schema['additionalProperties']) {
+      var propSchema = resolve(schema['additionalProperties'], context);
+      for (key in instance) {
+        // schema.properties are already checked, skip
+        if (schema.properties && schema.properties.hasOwnProperty(key))
+          continue;
+        // now check, whether additionalProperty conforms its schema
+        errors = validate(propSchema, instance[key], context);
+        result = result.concat(errorsForKey(key, errors));
       }
     }
   }
@@ -245,13 +260,7 @@ var resolve = function(schema, context) {
   if (reference) {
     if (!reference.match(/^#(\/([a-zA-Z_][a-zA-Z_0-9]*|[0-9]+))*$/))
       throw new Error('reference '+reference+' has unsupported format');
-
-    return {
-      allOf: [
-        without(schema, '$ref'),
-        getIn(context, reference.split('/').slice(1))
-      ]
-    };
+    return merge(without(schema, '$ref'), getIn(context, reference.split('/').slice(1));)
   } else
     return schema;
 };
@@ -263,10 +272,10 @@ var validate = function(schema, instance, context) {
 
   if (effectiveSchema.allOf) {
     var results = [without(effectiveSchema, 'allOf')]
-      .concat(effectiveSchema.allOf)
-      .map(function(schema) {
-        return validate(schema, instance, effectiveContext);
-      });
+        .concat(effectiveSchema.allOf)
+        .map(function(schema) {
+          return validate(schema, instance, effectiveContext);
+        });
     return cat(results);
   } else {
     var type = effectiveSchema.enum ? 'enum' : effectiveSchema.type;
